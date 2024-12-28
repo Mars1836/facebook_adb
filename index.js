@@ -126,7 +126,7 @@ const waitAndClickIcon = async (
     const centerY = (element[0][1] + element[1][1]) / 2;
     console.log("part", part, centerX, centerY);
     await tapScreen(centerX, centerY);
-    return true;
+    return { x: centerX, y: centerY };
   }
   return false;
 };
@@ -142,7 +142,7 @@ const waitAndHold = async (
       if (element) {
         await holdScreen(...element, duration);
 
-        return true;
+        return [element[0], element[1]];
       }
       await delay(interval);
     }
@@ -213,17 +213,19 @@ async function slipAndLikePost() {
 }
 async function slipAndIconToPost() {
   const loop = 100;
+  let locationIconPost = [];
   for (let i = 0; i < loop; i++) {
-    const hold = await waitAndHold(
+    locationIconPost = await waitAndHold(
       {
         className: "android.view.ViewGroup",
         contentDesc: "Thích. Nhấn đúp và giữ để bày tỏ cảm xúc.",
+        clickable: true,
       },
       300,
       1,
       100
     );
-    if (!hold) {
+    if (!locationIconPost) {
       await swipeScreen(100, 900, 100, 0, 400);
       continue;
     }
@@ -240,11 +242,25 @@ async function slipAndIconToPost() {
     if (!found) {
       continue;
     }
+    await commentPost(locationIconPost);
     chooseIconIndex++;
     if (chooseIconIndex >= listIcon.length) {
       chooseIconIndex = 0;
     }
   }
+}
+async function commentPost(locate) {
+  let x = locate[0] + 200;
+  let y = locate[1];
+  await tapScreen(x, y);
+
+  await inputText("comment");
+  await waitAndClick({
+    contentDesc: "Gửi",
+    className: "android.view.ViewGroup",
+  });
+  // await delay(1000);
+  await swipeScreen(0, 400, 400, 400, 200);
 }
 // Ví dụ sử dụng
 async function loginToFacebook() {
@@ -290,6 +306,7 @@ async function loginToFacebook() {
 (async () => {
   // 1. Mở Facebook
   console.log("Mở Facebook...");
+
   await loginToFacebook();
   //   await slipAndLikePost();
   await slipAndIconToPost();
